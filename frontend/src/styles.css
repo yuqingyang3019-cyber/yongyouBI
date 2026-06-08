@@ -1,0 +1,166 @@
+:root {
+  color: #172033;
+  font-family:
+    Inter, "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #edf2f8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 1180px;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.dashboard {
+  min-height: 100vh;
+  padding: 28px;
+}
+
+.hero {
+  align-items: center;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(77, 142, 255, 0.42), transparent 28%),
+    linear-gradient(135deg, #111c35, #244e89);
+  border-radius: 28px;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  padding: 28px 32px;
+  box-shadow: 0 22px 60px rgba(32, 72, 132, 0.24);
+}
+
+.hero h1 {
+  font-size: 34px;
+  margin: 6px 0 10px;
+}
+
+.hero p {
+  color: rgba(255, 255, 255, 0.78);
+  margin: 0;
+}
+
+.eyebrow {
+  color: #95c7ff !important;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.month-picker {
+  align-items: flex-start;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+}
+
+.month-picker input {
+  border: 0;
+  border-radius: 12px;
+  color: #172033;
+  padding: 10px 12px;
+}
+
+.filter-card,
+.kpi-card,
+.chart {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(116, 133, 158, 0.16);
+  box-shadow: 0 16px 45px rgba(35, 55, 94, 0.1);
+}
+
+.filter-card {
+  align-items: center;
+  border-radius: 20px;
+  display: flex;
+  gap: 18px;
+  margin-bottom: 18px;
+  padding: 16px 18px;
+}
+
+.filter-card > span {
+  color: #5d6a7f;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.chips {
+  display: flex;
+  gap: 10px;
+}
+
+.chip {
+  align-items: center;
+  background: #f5f8fc;
+  border: 1px solid #dfe7f1;
+  border-radius: 999px;
+  color: #2f3b52;
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+}
+
+.alert {
+  border-radius: 14px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+}
+
+.alert.error {
+  background: #fff1f1;
+  color: #9a1b1b;
+}
+
+.alert.warning {
+  background: #fff8e6;
+  color: #805600;
+}
+
+.kpi-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(4, 1fr);
+  margin-bottom: 18px;
+}
+
+.kpi-card {
+  border-radius: 22px;
+  padding: 20px;
+}
+
+.kpi-card span,
+.kpi-card small {
+  color: #6f7d91;
+  display: block;
+}
+
+.kpi-card strong {
+  display: block;
+  font-size: 28px;
+  margin: 10px 0;
+}
+
+.chart-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.chart {
+  border-radius: 24px;
+  height: 380px;
+  padding: 10px;
+}
