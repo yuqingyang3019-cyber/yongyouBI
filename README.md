@@ -20,3 +20,11 @@
 ## 前端
 
 前端提供月份筛选、单据类型筛选、KPI 卡片和 ECharts 图表，入口在 `frontend/src/pages/Dashboard.tsx`。
+
+## 测试
+
+后端聚合逻辑使用 Python 标准库单测：
+
+```bash
+python3 -m unittest discover -s tests
+```
