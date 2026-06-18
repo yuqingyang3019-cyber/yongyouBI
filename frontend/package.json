@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -13,10 +13,12 @@
     "@types/react-dom": "latest",
     "@vitejs/plugin-react": "latest",
     "echarts": "latest",
-    "typescript": "latest",
-    "vite": "latest",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "typescript": "latest",
+    "vite": "latest"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@types/node": "^25.9.2"
+  }
 }

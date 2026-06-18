@@ -10,6 +10,8 @@ from backend.config import get_settings
 CONTRACT_LIST_PATH = "/yonbip/cpu/contractOpenApi/queryList"
 PURCHASE_ORDER_LIST_PATH = "/yonbip/scm/purchaseorder/list"
 PAYMENT_APPLY_LIST_PATH = "/yonbip/EFI/paymentApply/list"
+ARRIVAL_ORDER_LIST_PATH = "/yonbip/scm/arrivalorder/list"
+PURCHASE_INVOICE_LIST_PATH = "/yonbip/scm/purinvoice/list"
 
 
 @dataclass
@@ -43,6 +45,8 @@ def _fetch_pages(path: str, payload_factory: Callable[[int, int], dict[str, Any]
         all_records.extend(records)
         fetched_pages = page_index
         if page_index >= page_count or not records:
+            break
+        if record_count > 0 and len(all_records) >= record_count:
             break
 
     return PageResult(
@@ -98,3 +102,39 @@ def list_payment_applies(start_time: str, end_time: str) -> PageResult:
         }
 
     return _fetch_pages(PAYMENT_APPLY_LIST_PATH, payload)
+
+
+def list_arrival_orders(start_time: str, end_time: str) -> PageResult:
+    def payload(page_index: int, page_size: int) -> dict[str, Any]:
+        return {
+            "pageIndex": page_index,
+            "pageSize": page_size,
+            "isSum": True,
+            "simpleVOs": [
+                {
+                    "field": "到货日期",
+                    "conditions": "vouchdate",
+                    "op": "between",
+                    "value1": start_time,
+                    "value2": end_time,
+                    "logicOp": "and",
+                }
+            ],
+            "queryOrders": [{"field": "id", "order": "asc"}],
+        }
+
+    return _fetch_pages(ARRIVAL_ORDER_LIST_PATH, payload)
+
+
+def list_purchase_invoices(start_time: str, end_time: str) -> PageResult:
+    def payload(page_index: int, page_size: int) -> dict[str, Any]:
+        return {
+            "pageIndex": page_index,
+            "pageSize": page_size,
+            "open_vouchdate_begin": start_time,
+            "open_vouchdate_end": end_time,
+            "isSum": True,
+            "queryOrders": [{"field": "id", "order": "asc"}],
+        }
+
+    return _fetch_pages(PURCHASE_INVOICE_LIST_PATH, payload)

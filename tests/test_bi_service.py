@@ -106,6 +106,61 @@ class BiServiceTest(unittest.TestCase):
         failed = next(item for item in summary["byDocumentType"] if item["type"] == "failed")
         self.assertEqual(failed["error"], "接口超时")
 
+    def test_execution_summary_supports_person_filters(self) -> None:
+        configs = {
+            "purchase_order": DocumentConfig(
+                key="purchase_order",
+                label="采购订单",
+                fetcher=lambda start, end: page(
+                    [
+                        {"id": "o1", "operator_name": "张三", "oriSum": "100"},
+                        {"id": "o2", "operator_name": "李四", "oriSum": "200"},
+                        {"id": "o3", "operator_name": "王五", "oriSum": "300"},
+                    ]
+                ),
+                person_fields=("operator_name",),
+                amount_fields=("oriSum",),
+                id_fields=("id",),
+            )
+        }
+
+        with patch.object(bi_service, "DOCUMENTS", configs):
+            summary = execution_summary(month="2026-06", persons=["张"], person_match_mode="contains", top_n=1)
+
+        self.assertEqual(summary["totals"]["count"], 1)
+        self.assertEqual(summary["totals"]["amount"], 100.0)
+        self.assertEqual(summary["query"]["persons"], ["张"])
+        self.assertEqual(len(summary["byPersonTopN"]), 1)
+        self.assertEqual(summary["byPersonTopN"][0]["person"], "张三")
+
+    def test_execution_summary_uses_cache_and_refresh(self) -> None:
+        call_count = {"value": 0}
+
+        def fetcher(start: str, end: str) -> SimpleNamespace:
+            call_count["value"] += 1
+            return page([{"id": f"r{call_count['value']}", "owner": "张三", "amount": 10}])
+
+        configs = {
+            "test_doc": DocumentConfig(
+                key="test_doc",
+                label="测试单据",
+                fetcher=fetcher,
+                person_fields=("owner",),
+                amount_fields=("amount",),
+                id_fields=("id",),
+            )
+        }
+
+        with patch.object(bi_service, "DOCUMENTS", configs), patch.object(bi_service, "_SUMMARY_CACHE", {}):
+            first = execution_summary(month="2026-06")
+            second = execution_summary(month="2026-06")
+            refreshed = execution_summary(month="2026-06", refresh=True)
+
+        self.assertEqual(call_count["value"], 2)
+        self.assertFalse(first["meta"]["fromCache"])
+        self.assertTrue(second["meta"]["fromCache"])
+        self.assertFalse(refreshed["meta"]["fromCache"])
+
 
 if __name__ == "__main__":
     unittest.main()

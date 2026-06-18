@@ -28,12 +28,12 @@ export function ExecutionChart({ title, categories, series, kind = "bar", valueL
     const option = {
       title: { text: title, left: 8, top: 4, textStyle: { fontSize: 15 } },
       tooltip: { trigger: "axis" },
-      grid: { left: isHorizontal ? 88 : 48, right: 24, top: 56, bottom: 42 },
+      grid: { left: isHorizontal ? 132 : 48, right: 32, top: 56, bottom: 42 },
       legend: series.length > 1 ? { top: 28 } : undefined,
       xAxis: {
         type: isHorizontal ? "value" : "category",
         data: isHorizontal ? undefined : categories,
-        axisLabel: { color: "#5f6b7a" }
+        axisLabel: { color: "#5f6b7a", overflow: "truncate", width: isHorizontal ? 120 : undefined }
       },
       yAxis: {
         type: isHorizontal ? "category" : "value",
