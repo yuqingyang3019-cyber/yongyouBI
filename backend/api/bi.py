@@ -5,6 +5,8 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Query
 
 from backend.services.bi_service import execution_summary
+from backend.services.overdue_service import contract_overdue
+from backend.services.sync_service import get_sync_status, kick_sync
 
 
 router = APIRouter(prefix="/api/bi", tags=["bi"])
@@ -30,5 +32,41 @@ def get_execution_summary(
             top_n=topN,
             refresh=refresh,
         )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/contract-overdue")
+def get_contract_overdue(
+    month: Optional[str] = Query(default=None, description="已废弃，忽略"),
+    status: Optional[str] = Query(
+        default="overdue,upcoming,normal",
+        description="逗号分隔状态：overdue / upcoming / normal",
+    ),
+    sync: bool = Query(default=True, description="是否在返回本地数据同时触发后台增量同步"),
+) -> dict:
+    statuses = [item.strip() for item in (status or "").split(",") if item.strip()]
+    try:
+        return contract_overdue(month=month, statuses=statuses or None, kick=sync)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/contract-overdue/sync-status")
+def get_contract_overdue_sync_status(
+    month: Optional[str] = Query(default=None, description="已废弃，忽略"),
+) -> dict:
+    try:
+        return get_sync_status(month)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/contract-overdue/sync")
+def post_contract_overdue_sync(
+    month: Optional[str] = Query(default=None, description="已废弃，忽略"),
+) -> dict:
+    try:
+        return kick_sync(month, force=True)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

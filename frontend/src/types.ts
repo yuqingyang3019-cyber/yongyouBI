@@ -102,3 +102,79 @@ export interface ExecutionSummary {
     cacheKey: string;
   };
 }
+
+export type OverdueStatus = "overdue" | "upcoming" | "normal" | "paid";
+
+export interface ContractAttachment {
+  type: string;
+  label: string;
+  url: string;
+  fileId: string;
+}
+
+export interface ContractOverdueRow {
+  contractId: string;
+  contractCode: string;
+  supplier: string;
+  person: string;
+  payPeriod: number | string | null;
+  payPointName: string;
+  source: string;
+  payTaxMoney: number;
+  paidAmount: number;
+  unpaidAmount: number;
+  dueDate: string;
+  daysUntilDue: number;
+  status: OverdueStatus;
+  attachments: ContractAttachment[];
+}
+
+export interface StatusBucket {
+  count: number;
+  amount: number;
+}
+
+export interface ContractSyncStatus {
+  month: string;
+  scope?: string;
+  status: "idle" | "running" | "done" | "error";
+  pending: number;
+  doneCount: number;
+  totalListed: number;
+  skipped: number;
+  error: string;
+  lastSyncedAt: string;
+  updatedAt: string;
+  cachedCount: number;
+  range?: {
+    start: string;
+    end: string;
+  };
+}
+
+export interface ContractOverdueResult {
+  scope: string;
+  range: {
+    start: string;
+    end: string;
+  };
+  query: {
+    statuses: Array<"overdue" | "upcoming" | "normal">;
+  };
+  summary: {
+    overdue: StatusBucket;
+    upcoming: StatusBucket;
+    normal: StatusBucket;
+    paid: StatusBucket;
+  };
+  rows: ContractOverdueRow[];
+  paidRows: ContractOverdueRow[];
+  meta: {
+    cachedContractCount: number;
+    rowCount: number;
+    paidRowCount: number;
+    updatedAt: string;
+    sync: ContractSyncStatus;
+    emptyCache: boolean;
+  };
+}

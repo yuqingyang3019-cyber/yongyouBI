@@ -18,7 +18,7 @@ def load_env_file(path: Path = PROJECT_ROOT / ".env") -> None:
         if not text or text.startswith("#") or "=" not in text:
             continue
         key, value = text.split("=", 1)
-        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+        os.environ[key.strip()] = value.strip().strip('"').strip("'")
 
 
 load_env_file()
@@ -43,6 +43,7 @@ class Settings:
     request_page_size: int
     request_max_pages: int
     allowed_origins: list[str]
+    contract_detail_sync_interval: float
 
 
 def _as_int(name: str, default: int) -> int:
@@ -55,6 +56,16 @@ def _as_int(name: str, default: int) -> int:
         raise RuntimeError(f"配置必须是整数：{name}") from exc
 
 
+def _as_float(name: str, default: float) -> float:
+    value = optional_env(name)
+    if not value:
+        return default
+    try:
+        return float(value)
+    except ValueError as exc:
+        raise RuntimeError(f"配置必须是数字：{name}") from exc
+
+
 def get_settings() -> Settings:
     origins = optional_env("ALLOWED_ORIGINS", "http://localhost:5173")
     return Settings(
@@ -64,4 +75,5 @@ def get_settings() -> Settings:
         request_page_size=_as_int("YONBIP_PAGE_SIZE", 200),
         request_max_pages=_as_int("YONBIP_MAX_PAGES", 50),
         allowed_origins=[origin.strip() for origin in origins.split(",") if origin.strip()],
+        contract_detail_sync_interval=_as_float("YONBIP_CONTRACT_DETAIL_INTERVAL", 1.5),
     )

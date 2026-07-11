@@ -3,11 +3,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from backend.clients.yonyou.client import success_code, yonyou_post
+from backend.clients.yonyou.client import success_code, yonyou_get, yonyou_post
 from backend.config import get_settings
 
 
 CONTRACT_LIST_PATH = "/yonbip/cpu/contractOpenApi/queryList"
+CONTRACT_DETAIL_PATH = "/yonbip/cpu/contractOpenApi/queryById"
 PURCHASE_ORDER_LIST_PATH = "/yonbip/scm/purchaseorder/list"
 PAYMENT_APPLY_LIST_PATH = "/yonbip/EFI/paymentApply/list"
 ARRIVAL_ORDER_LIST_PATH = "/yonbip/scm/arrivalorder/list"
@@ -69,6 +70,24 @@ def list_contracts(start_date: str, end_date: str) -> PageResult:
         }
 
     return _fetch_pages(CONTRACT_LIST_PATH, payload)
+
+
+def get_contract_by_id(contract_id: str | int, code: str | None = None) -> dict[str, Any]:
+    params: dict[str, Any] = {}
+    if contract_id not in (None, ""):
+        params["id"] = contract_id
+    if code:
+        params["code"] = code
+    if not params:
+        raise ValueError("get_contract_by_id 需要 id 或 code")
+
+    body = yonyou_get(CONTRACT_DETAIL_PATH, params)
+    if not success_code(body, "200"):
+        raise RuntimeError(f"用友接口调用失败：{CONTRACT_DETAIL_PATH}，{body.get('message') or body}")
+    data = body.get("data")
+    if not isinstance(data, dict):
+        raise RuntimeError(f"合同详情返回为空：{contract_id or code}")
+    return data
 
 
 def list_purchase_orders(start_time: str, end_time: str) -> PageResult:

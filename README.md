@@ -28,3 +28,22 @@
 ```bash
 python3 -m unittest discover -s tests
 ```
+
+## OpenSpec
+
+本项目使用 [OpenSpec](https://github.com/Fission-AI/OpenSpec) 做规格驱动开发。规格与变更提案在 `openspec/`，Cursor 斜杠命令在 `.cursor/commands/`。
+
+常用流程（在 Cursor 聊天中）：
+
+1. `/opsx:explore` — 先摸清现状与方案（可选）
+2. `/opsx:propose <改动名>` — 写提案、规格增量与任务清单
+3. `/opsx:apply` — 按任务实现
+4. `/opsx:archive` — 归档并把规格合并回 `openspec/specs/`
+
+本地 CLI（需 Node.js ≥ 20.19）：
+
+```bash
+npm install -g @fission-ai/openspec@latest
+openspec list
+openspec validate --all
+```

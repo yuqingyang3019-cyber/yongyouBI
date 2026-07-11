@@ -8,3 +8,9 @@ dist/
 frontend/vite.config.d.ts
 frontend/vite.config.js
 .DS_Store
+data/
+*.sqlite
+*.sqlite3
+.cursor/*
+!.cursor/commands/
+!.cursor/commands/**

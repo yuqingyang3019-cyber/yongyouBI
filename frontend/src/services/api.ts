@@ -1,4 +1,4 @@
-import type { ExecutionSummary } from "../types";
+import type { ContractOverdueResult, ContractSyncStatus, ExecutionSummary } from "../types";
 
 export async function fetchExecutionSummary(
   month: string,
@@ -25,6 +25,44 @@ export async function fetchExecutionSummary(
   }
 
   const response = await fetch(`/api/bi/execution-summary?${params.toString()}`);
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || `请求失败：${response.status}`);
+  }
+  return response.json();
+}
+
+export async function fetchContractOverdue(
+  statuses: Array<"overdue" | "upcoming" | "normal">,
+  sync = true
+): Promise<ContractOverdueResult> {
+  const params = new URLSearchParams();
+  if (statuses.length > 0) {
+    params.set("status", statuses.join(","));
+  }
+  params.set("sync", sync ? "true" : "false");
+
+  const response = await fetch(`/api/bi/contract-overdue?${params.toString()}`);
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || `请求失败：${response.status}`);
+  }
+  return response.json();
+}
+
+export async function fetchContractOverdueSyncStatus(): Promise<ContractSyncStatus> {
+  const response = await fetch("/api/bi/contract-overdue/sync-status");
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || `请求失败：${response.status}`);
+  }
+  return response.json();
+}
+
+export async function triggerContractOverdueSync(): Promise<ContractSyncStatus> {
+  const response = await fetch("/api/bi/contract-overdue/sync", {
+    method: "POST"
+  });
   if (!response.ok) {
     const message = await response.text();
     throw new Error(message || `请求失败：${response.status}`);

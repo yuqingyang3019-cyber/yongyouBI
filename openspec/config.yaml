@@ -1,0 +1,35 @@
+schema: spec-driven
+
+context: |
+  项目：YonBIP BI（用友 YonBIP 采购链路数据分析）
+  技术栈：
+  - 后端：Python + FastAPI（backend/）
+  - 前端：React + TypeScript + Vite + ECharts（frontend/）
+  - 本地缓存：SQLite（data/）
+  - 测试：Python unittest（tests/）
+  领域：
+  - 从 YonBIP 拉取采购合同 / 采购订单 / 付款申请单
+  - 按月份与业务执行人聚合执行数量与金额（Dashboard）
+  - 合同逾期/即将到期分析与增量同步（ContractOverdue）
+  关键约定：
+  - 用友密钥（appKey / secret / access_token）只在后端读取，前端不得接触
+  - 环境变量见 .env.example；不要提交 .env 或含密钥文件
+  - 用友 API 文档在 API/；参考资料在 ref/
+  - 提交信息使用 conventional commits（feat/fix/chore/docs/refactor/test）
+  - 实现时不写冗余代码，及时删除废弃代码
+  - 用户面向文案与沟通使用中文
+
+rules:
+  proposal:
+    - 从用户视角说明完成后会有什么新体验
+    - 明确 Non-goals，避免范围膨胀
+    - 涉及用友接口时标明依赖的 API 文档路径（API/ 下）
+  specs:
+    - 需求用可验证的 Scenario（Given/When/Then）描述
+    - 金额字段优先级、执行人字段映射等业务规则要写清楚
+  design:
+    - 优先复用现有 backend/services、clients/yonyou、frontend 组件模式
+    - 密钥与 token 不得进入前端或日志明文
+  tasks:
+    - 任务按可独立验证的小步拆分
+    - 涉及聚合/逾期逻辑时包含对应 unittest
