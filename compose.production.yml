@@ -1,0 +1,79 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${RECEIVABLE_DB_NAME:-yongyou_receivables}
+      POSTGRES_USER: ${RECEIVABLE_DB_USER:-yongyou_app}
+      POSTGRES_PASSWORD: ${RECEIVABLE_DB_PASSWORD:?set RECEIVABLE_DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    mem_limit: 512m
+
+  api:
+    image: ${API_IMAGE:-yongyou-bi-api:local}
+    build:
+      context: .
+      target: backend
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - app_data:/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "from urllib.request import urlopen; assert urlopen('http://127.0.0.1:8000/health').status == 200",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    mem_limit: 512m
+
+  web:
+    image: ${WEB_IMAGE:-yongyou-bi-web:local}
+    build:
+      context: .
+      target: frontend
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${APP_HTTP_PORT:-80}:8080"
+    mem_limit: 64m
+
+  sqlbot:
+    image: dataease/sqlbot:v1.8.0@sha256:c4ca3acc34f0c63a64f3f3e7bb909760f17d184959635542278710144347d9e0
+    restart: unless-stopped
+    privileged: true
+    profiles: ["sqlbot"]
+    ports:
+      - "127.0.0.1:${SQLBOT_WEB_PORT:-8080}:8000"
+      - "127.0.0.1:${SQLBOT_MCP_PORT:-8081}:8001"
+    volumes:
+      - sqlbot_excel:/opt/sqlbot/data/excel
+      - sqlbot_file:/opt/sqlbot/data/file
+      - sqlbot_images:/opt/sqlbot/images
+      - sqlbot_logs:/opt/sqlbot/app/logs
+      - sqlbot_postgres:/var/lib/postgresql/data
+    mem_limit: 1500m
+
+volumes:
+  postgres_data:
+  app_data:
+  sqlbot_excel:
+  sqlbot_file:
+  sqlbot_images:
+  sqlbot_logs:
+  sqlbot_postgres:
