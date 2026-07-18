@@ -19,7 +19,7 @@ from backend.config import load_env_file, optional_env, require_env
 
 
 load_env_file()
-BASE_URL = optional_env("SQLBOT_BASE_URL", "http://localhost:8080").rstrip("/")
+BASE_URL = optional_env("SQLBOT_ADMIN_BASE_URL", optional_env("SQLBOT_BASE_URL", "http://localhost:8080")).rstrip("/")
 DEFAULT_PASSWORD = "SQLBot@123456"
 AES_KEY_HEX = "53514c426f7431323334353637383930"
 
@@ -33,6 +33,7 @@ def _unwrap(response: requests.Response) -> Any:
 
 
 def _login_encrypt(value: str) -> str:
+    container_name = optional_env("SQLBOT_CONTAINER_NAME", "yongyou-sqlbot")
     script = (
         "import asyncio, os\n"
         "from common.utils.crypto import sqlbot_encrypt\n"
@@ -44,7 +45,7 @@ def _login_encrypt(value: str) -> str:
             "exec",
             "-e",
             f"SQLBOT_VALUE={value}",
-            "yongyou-sqlbot",
+            container_name,
             "sh",
             "-lc",
             "cd /opt/sqlbot/app && .venv/bin/python - <<'PY'\n" + script + "PY",
@@ -137,7 +138,7 @@ def main() -> None:
     if not datasource:
         configuration = _aes_encrypt(
             {
-                "host": "host.docker.internal",
+                "host": optional_env("SQLBOT_DB_HOST", "host.docker.internal"),
                 "port": 5432,
                 "username": optional_env("SQLBOT_DB_USER", "sqlbot_reader"),
                 "password": require_env("SQLBOT_DB_PASSWORD"),
@@ -371,7 +372,10 @@ def main() -> None:
                 f"{BASE_URL}/api/v1/system/embedded",
                 json={
                     "name": "应收智能问数",
-                    "domain": "http://localhost:5173,http://127.0.0.1:5173",
+                    "domain": optional_env(
+                        "SQLBOT_EMBED_ALLOWED_ORIGINS",
+                        "http://localhost:5173,http://127.0.0.1:5173",
+                    ),
                     "type": 4,
                     "description": "应收交付版页面嵌入应用",
                     "configuration": json.dumps(
@@ -387,7 +391,7 @@ def main() -> None:
 
     _save_env(
         {
-            "SQLBOT_BASE_URL": BASE_URL,
+            "SQLBOT_BASE_URL": optional_env("SQLBOT_EMBED_BASE_URL", BASE_URL),
             "SQLBOT_EMBEDDED_ID": str(application["id"]),
             "SQLBOT_APP_ID": str(application["app_id"]),
             "SQLBOT_APP_SECRET": str(application["app_secret"]),
