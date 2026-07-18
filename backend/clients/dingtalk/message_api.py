@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import json
 import time
+import uuid
 from typing import Any
 
-from backend.clients.dingtalk.openapi_client import DingTalkOpenApiClient
+from backend.clients.dingtalk.openapi_client import DingTalkApiError, DingTalkOpenApiClient
 from backend.config import optional_env
 
 _DEFAULT_ROBOT_CODE = "dingsifjezvqedsoanhf"
@@ -14,6 +15,44 @@ _SEND_INTERVAL_SEC = 0.15
 
 def robot_code_from_env() -> str:
     return optional_env("DINGTALK_ROBOT_CODE", _DEFAULT_ROBOT_CODE)
+
+
+def card_template_id_from_env() -> str:
+    return optional_env("DINGTALK_CARD_TEMPLATE_ID")
+
+
+def send_robot_card_to_users(
+    client: DingTalkOpenApiClient,
+    *,
+    user_ids: list[str],
+    card_param_map: dict[str, str],
+    template_id: str | None = None,
+) -> dict[str, Any]:
+    card_template_id = template_id or card_template_id_from_env()
+    if not card_template_id:
+        raise ValueError("未配置 DINGTALK_CARD_TEMPLATE_ID")
+
+    sent: list[str] = []
+    failed: list[dict[str, str]] = []
+    for userid in user_ids:
+        try:
+            client.api_post(
+                "v1.0/card/instances/createAndDeliver",
+                {
+                    "cardTemplateId": card_template_id,
+                    "outTrackId": f"receivable-risk-{uuid.uuid4().hex}",
+                    "cardData": {"cardParamMap": card_param_map},
+                    "openSpaceId": f"dtv1.card//IM_ROBOT.{userid}",
+                    "imRobotOpenSpaceModel": {"supportForward": True},
+                    "imRobotOpenDeliverModel": {"spaceType": "IM_ROBOT"},
+                },
+            )
+            sent.append(userid)
+        except DingTalkApiError as exc:
+            failed.append({"userid": userid, "error": str(exc)})
+        if len(sent) + len(failed) < len(user_ids):
+            time.sleep(_SEND_INTERVAL_SEC)
+    return {"sentUserids": sent, "failed": failed, "total": len(user_ids)}
 
 
 def send_robot_markdown(

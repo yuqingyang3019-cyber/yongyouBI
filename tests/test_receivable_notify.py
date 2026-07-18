@@ -7,6 +7,7 @@ from unittest.mock import patch
 from backend.services.overdue_service import build_receivable_charts
 from backend.services.receivable_notify_service import (
     build_overdue_digest_markdown,
+    build_overdue_risk_card_data,
     send_receivable_digest,
 )
 
@@ -67,6 +68,12 @@ class ReceivableNotifyTest(unittest.TestCase):
     def test_digest_rejects_more_than_twenty_recipients(self) -> None:
         with self.assertRaisesRegex(ValueError, "最多选择 20 人"):
             send_receivable_digest([f"u{index}" for index in range(21)], dry_run=True)
+
+    def test_build_overdue_risk_card_data(self) -> None:
+        self.assertEqual(
+            build_overdue_risk_card_data({"overdue": {"count": 2, "amount": 1234.5}}),
+            {"overdue_count": "2", "overdue_amount": "¥1,234.50"},
+        )
 
     @patch("backend.services.receivable_notify_service.send_robot_markdown_to_users")
     @patch("backend.services.receivable_notify_service.DingTalkOpenApiClient")

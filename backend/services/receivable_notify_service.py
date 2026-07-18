@@ -3,7 +3,11 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
-from backend.clients.dingtalk.message_api import send_robot_markdown_to_users
+from backend.clients.dingtalk.message_api import (
+    card_template_id_from_env,
+    send_robot_card_to_users,
+    send_robot_markdown_to_users,
+)
 from backend.clients.dingtalk.openapi_client import DingTalkOpenApiClient
 from backend.config import optional_env
 from backend.db.receivable_store import ReceivableCacheStore, get_receivable_store
@@ -86,6 +90,14 @@ def build_overdue_digest_markdown(
     return title, "\n".join(lines)
 
 
+def build_overdue_risk_card_data(summary: dict[str, Any]) -> dict[str, str]:
+    overdue = summary.get("overdue") or {}
+    return {
+        "overdue_count": str(int(overdue.get("count") or 0)),
+        "overdue_amount": _format_money(float(overdue.get("amount") or 0)),
+    }
+
+
 def load_receivable_snapshot(store: ReceivableCacheStore | None = None) -> tuple[list[dict[str, Any]], dict[str, Any], dict[str, Any]]:
     cache = store or get_receivable_store()
     invoices = [item.payload for item in cache.get_all_sale_invoices()]
@@ -116,6 +128,7 @@ def send_receivable_digest(
         raise ValueError("单个任务最多选择 20 人")
     rows, summary, charts = load_receivable_snapshot(store)
     title, text = build_overdue_digest_markdown(rows, summary)
+    card_data = build_overdue_risk_card_data(summary)
     if dry_run:
         return {
             "dryRun": True,
@@ -124,21 +137,46 @@ def send_receivable_digest(
             "recipients": unique_user_ids,
             "overdueCount": (summary.get("overdue") or {}).get("count", 0),
             "charts": charts,
+            "cardData": card_data,
         }
 
     client = DingTalkOpenApiClient.from_env()
     if client is None:
         raise RuntimeError("未配置 DINGTALK_APP_KEY / DINGTALK_APP_SECRET")
 
-    result = send_robot_markdown_to_users(
-        client,
-        user_ids=unique_user_ids,
-        title=title,
-        text=text,
-    )
+    card_result: dict[str, Any] | None = None
+    fallback_result: dict[str, Any] | None = None
+    if card_template_id_from_env():
+        card_result = send_robot_card_to_users(
+            client,
+            user_ids=unique_user_ids,
+            card_param_map=card_data,
+        )
+        failed_userids = [item["userid"] for item in card_result["failed"]]
+        if failed_userids:
+            fallback_result = send_robot_markdown_to_users(
+                client,
+                user_ids=failed_userids,
+                title=title,
+                text=text,
+            )
+    else:
+        fallback_result = send_robot_markdown_to_users(
+            client,
+            user_ids=unique_user_ids,
+            title=title,
+            text=text,
+        )
     return {
         "title": title,
-        "sent": result["sent"],
+        "sent": (
+            len(card_result["sentUserids"]) + int((fallback_result or {}).get("sent") or 0)
+            if card_result
+            else fallback_result["sent"]
+        ),
         "recipients": unique_user_ids,
         "overdueCount": (summary.get("overdue") or {}).get("count", 0),
+        "delivery": "card" if card_result and not card_result["failed"] else "markdown_fallback",
+        "card": card_result,
+        "fallback": fallback_result,
     }
