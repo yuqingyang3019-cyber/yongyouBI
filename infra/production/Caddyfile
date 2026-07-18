@@ -2,3 +2,10 @@ app.water-healer.com {
     encode zstd gzip
     reverse_proxy web:8080
 }
+
+admin.water-healer.com {
+    forward_auth api:8000 {
+        uri /api/auth/me
+    }
+    reverse_proxy sqlbot:8000
+}

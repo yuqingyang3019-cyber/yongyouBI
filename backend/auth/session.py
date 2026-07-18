@@ -72,11 +72,13 @@ def verify_session(token: str, *, now: float | None = None) -> dict[str, Any] | 
 
 
 def set_session_cookie(response: Response, user: dict[str, Any]) -> None:
+    domain = optional_env("COOKIE_DOMAIN") or None
     response.set_cookie(
         SESSION_COOKIE,
         sign_session(user),
         max_age=_ttl_seconds(),
         path="/",
+        domain=domain,
         httponly=True,
         secure=optional_env("COOKIE_SECURE", "false").lower() in {"1", "true", "yes"},
         samesite="lax",
@@ -84,7 +86,8 @@ def set_session_cookie(response: Response, user: dict[str, Any]) -> None:
 
 
 def clear_session_cookie(response: Response) -> None:
-    response.delete_cookie(SESSION_COOKIE, path="/", samesite="lax")
+    domain = optional_env("COOKIE_DOMAIN") or None
+    response.delete_cookie(SESSION_COOKIE, path="/", domain=domain, samesite="lax")
 
 
 def current_user(request: Request) -> dict[str, Any]:
