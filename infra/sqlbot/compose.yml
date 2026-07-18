@@ -1,0 +1,17 @@
+services:
+  sqlbot:
+    image: dataease/sqlbot:v1.8.0@sha256:c4ca3acc34f0c63a64f3f3e7bb909760f17d184959635542278710144347d9e0
+    container_name: yongyou-sqlbot
+    restart: unless-stopped
+    privileged: true
+    ports:
+      - "${SQLBOT_WEB_PORT:-8080}:8000"
+      - "${SQLBOT_MCP_PORT:-8081}:8001"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./data/sqlbot/excel:/opt/sqlbot/data/excel
+      - ./data/sqlbot/file:/opt/sqlbot/data/file
+      - ./data/sqlbot/images:/opt/sqlbot/images
+      - ./data/sqlbot/logs:/opt/sqlbot/app/logs
+      - ./data/postgresql:/var/lib/postgresql/data

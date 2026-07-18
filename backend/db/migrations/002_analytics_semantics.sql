@@ -1,0 +1,15 @@
+COMMENT ON COLUMN receivable_analytics.invoice_facts.invoice_id IS '用友销售发票唯一标识';
+COMMENT ON COLUMN receivable_analytics.invoice_facts.invoice_code IS '销售发票单号';
+COMMENT ON COLUMN receivable_analytics.invoice_facts.contract_code IS '销售合同编号';
+COMMENT ON COLUMN receivable_analytics.invoice_facts.customer IS '客户名称';
+COMMENT ON COLUMN receivable_analytics.invoice_facts.salesman IS '销售负责人';
+COMMENT ON COLUMN receivable_analytics.invoice_facts.collected_amount IS '已匹配到该发票的收款金额';
+COMMENT ON COLUMN receivable_analytics.invoice_facts.outstanding IS '尚未收回金额，等于应收金额减已收金额';
+COMMENT ON COLUMN receivable_analytics.invoice_facts.collection_status IS '回款状态：unpaid 未收、partial 部分回款、settled 已结清';
+COMMENT ON COLUMN receivable_analytics.invoice_facts.match_quality IS '收款匹配质量，exact 最可靠，estimated 需人工核实';
+COMMENT ON COLUMN receivable_analytics.invoice_facts.audit_time IS '发票审核时间';
+COMMENT ON COLUMN receivable_analytics.invoice_facts.payment_term_days IS '合同约定账期天数';
+COMMENT ON COLUMN receivable_analytics.invoice_facts.due_date IS '到期日，按发票审核日加合同账期计算';
+COMMENT ON COLUMN receivable_analytics.invoice_facts.days_until_due IS '距到期日天数，负数代表已逾期';
+COMMENT ON COLUMN receivable_analytics.invoice_facts.calendar_status IS '仅按日期判断的状态';
+COMMENT ON COLUMN receivable_analytics.invoice_facts.refreshed_at IS '事实数据最近刷新时间';

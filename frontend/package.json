@@ -4,17 +4,30 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -p tsconfig.json --noEmit && vite build",
-    "preview": "vite preview"
+    "dev": "npm run dev:product",
+    "dev:product": "vite",
+    "dev:labs": "vite --config vite.labs.config.ts",
+    "build": "npm run build:product",
+    "build:product": "tsc -p tsconfig.product.json --noEmit && vite build",
+    "build:labs": "tsc -p tsconfig.json --noEmit && vite build --config vite.labs.config.ts",
+    "preview": "vite preview",
+    "preview:labs": "vite preview --config vite.labs.config.ts"
   },
   "dependencies": {
+    "@ant-design/charts": "^2.6.7",
+    "@ant-design/icons": "^6.3.2",
+    "@ant-design/pro-components": "^2.8.10",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "@univerjs/preset-sheets-core": "^0.25.1",
+    "@univerjs/presets": "^0.25.1",
     "@vitejs/plugin-react": "latest",
+    "antd": "^5.29.3",
+    "dayjs": "^1.11.21",
     "echarts": "latest",
     "react": "latest",
     "react-dom": "latest",
+    "rxjs": "^7.8.2",
     "typescript": "latest",
     "vite": "latest"
   },

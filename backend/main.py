@@ -1,29 +1,19 @@
 from __future__ import annotations
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 
-from backend.api.bi import router as bi_router
-from backend.config import get_settings
+from backend.api.auth import router as auth_router
+from backend.api.notifications import router as notifications_router
+from backend.api.receivables import router as receivables_router
+from backend.api.sqlbot import router as sqlbot_router
+from backend.app_factory import create_app as create_fastapi_app
 
 
 def create_app() -> FastAPI:
-    settings = get_settings()
-    app = FastAPI(title="YonBIP BI", version="0.1.0")
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.allowed_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+    return create_fastapi_app(
+        title="应收逾期管理",
+        routers=[auth_router, receivables_router, notifications_router, sqlbot_router],
     )
-    app.include_router(bi_router)
-
-    @app.get("/health")
-    def health() -> dict[str, str]:
-        return {"status": "ok"}
-
-    return app
 
 
 app = create_app()
