@@ -56,7 +56,7 @@ async function parseResponse<T>(request: Promise<Response>): Promise<T> {
 
 export async function fetchContractOverdue(
   statuses: Array<"overdue" | "upcoming" | "normal">,
-  sync = true
+  sync = false
 ): Promise<ContractOverdueResult> {
   const params = new URLSearchParams();
   if (statuses.length > 0) {

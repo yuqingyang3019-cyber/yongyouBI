@@ -24,7 +24,7 @@ def get_contract_overdue(
         default="overdue,upcoming,normal",
         description="逗号分隔状态：overdue / upcoming / normal",
     ),
-    sync: bool = Query(default=True, description="是否在返回本地数据同时触发后台增量同步"),
+    sync: bool = Query(default=False, description="是否在返回本地数据同时触发后台增量同步"),
 ) -> dict:
     statuses = [item.strip() for item in (status or "").split(",") if item.strip()]
     try:

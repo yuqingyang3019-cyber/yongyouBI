@@ -451,7 +451,7 @@ export function ReceivableWorkbenchV2({ currentUser }: { currentUser: AuthUser }
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [exportRows, setExportRows] = useState<ContractOverdueRow[]>([]);
 
-  function load(sync = true, showLoading = true) {
+  function load(sync = false, showLoading = true) {
     if (showLoading) setLoading(true);
     setError("");
     return fetchContractOverdue(["overdue", "upcoming", "normal"], sync)
@@ -464,7 +464,7 @@ export function ReceivableWorkbenchV2({ currentUser }: { currentUser: AuthUser }
   }
 
   useEffect(() => {
-    load(true);
+    load(false);
   }, []);
 
   useEffect(() => {
