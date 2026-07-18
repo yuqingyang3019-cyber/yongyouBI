@@ -49,8 +49,20 @@ services:
     depends_on:
       api:
         condition: service_healthy
+    mem_limit: 64m
+
+  gateway:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    depends_on:
+      - web
     ports:
-      - "${APP_HTTP_PORT:-80}:8080"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/production/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
     mem_limit: 64m
 
   sqlbot:
@@ -72,6 +84,8 @@ services:
 volumes:
   postgres_data:
   app_data:
+  caddy_data:
+  caddy_config:
   sqlbot_excel:
   sqlbot_file:
   sqlbot_images:
