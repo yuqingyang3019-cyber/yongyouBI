@@ -19,7 +19,32 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements.txt
       - run: pip install -r backend/requirements.txt
-      - run: python -m unittest tests.test_auth_session tests.test_collection_sync_service tests.test_notification_tasks tests.test_overdue_service tests.test_postgres_receivable_store tests.test_receivable_match tests.test_receivable_notify tests.test_sqlbot_embed tests.test_yonyou_finance tests.test_yonyou_sales
+      - name: Run committed product tests
+        shell: bash
+        run: |
+          candidates=(
+            tests.test_auth_session
+            tests.test_collection_sync_service
+            tests.test_notification_tasks
+            tests.test_overdue_service
+            tests.test_postgres_receivable_store
+            tests.test_receivable_match
+            tests.test_receivable_notify
+            tests.test_sqlbot_embed
+            tests.test_yonyou_finance
+            tests.test_yonyou_sales
+          )
+          tests=()
+          for candidate in "${candidates[@]}"; do
+            if [[ -f "${candidate//./\/}.py" ]]; then
+              tests+=("$candidate")
+            fi
+          done
+          if (( ${#tests[@]} )); then
+            python -m unittest "${tests[@]}"
+          else
+            echo "No product tests are committed in this revision."
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version: "22"

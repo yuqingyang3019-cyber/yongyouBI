@@ -1,8 +1,6 @@
 name: Deploy production
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -17,7 +15,6 @@ env:
 
 jobs:
   deploy:
-    if: ${{ env.DEPLOY_HOST != '' && env.DEPLOY_USER != '' && env.DEPLOY_SSH_PRIVATE_KEY != '' && env.GHCR_PULL_TOKEN != '' }}
     runs-on: ubuntu-latest
     env:
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
