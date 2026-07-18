@@ -5,6 +5,8 @@ from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 from backend.db.notification_task_store import get_notification_task_store
+from backend.clients.dingtalk.openapi_client import DingTalkOpenApiClient
+from backend.services.notification_recipient_service import resolve_notification_recipients
 from backend.services.receivable_notify_service import send_receivable_digest
 
 logger = logging.getLogger(__name__)
@@ -28,10 +30,15 @@ def start_receivable_scheduler() -> None:
         store = get_notification_task_store()
         for task in store.claim_due():
             try:
-                user_ids = [str(item["userid"]) for item in task["recipients"]]
+                client = DingTalkOpenApiClient.from_env()
+                if client is None:
+                    raise RuntimeError("未配置钉钉应用凭证")
+                user_ids, skipped = resolve_notification_recipients(task["recipients"], client)
+                if not user_ids:
+                    raise ValueError("当前接收范围没有有效的钉钉成员")
                 result = send_receivable_digest(user_ids)
                 store.record_result(task["id"], success=True)
-                logger.info("应收逾期摘要任务已发送：task=%s result=%s", task["id"], result)
+                logger.info("应收逾期摘要任务已发送：task=%s result=%s skipped=%s", task["id"], result, skipped)
             except Exception as exc:
                 store.record_result(task["id"], success=False, error=str(exc))
                 logger.exception("应收逾期摘要任务发送失败：task=%s", task["id"])

@@ -7,6 +7,11 @@ export interface DingTalkContact {
   title: string;
 }
 
+export interface DingTalkDepartment {
+  departmentId: number;
+  name: string;
+}
+
 export interface NotificationSchedule {
   kind: "minutes" | "hours" | "daily" | "weekly";
   interval: number;
@@ -79,6 +84,14 @@ export async function searchDingTalkContacts(keyword: string): Promise<DingTalkC
   return result.items;
 }
 
+export async function searchDingTalkDepartments(keyword: string): Promise<DingTalkDepartment[]> {
+  const params = new URLSearchParams({ q: keyword });
+  const result = await parseResponse<{ items: DingTalkDepartment[] }>(
+    fetch(`/api/notifications/departments?${params}`, { credentials: "include" })
+  );
+  return result.items;
+}
+
 export async function fetchNotificationTasks(): Promise<NotificationTask[]> {
   const result = await parseResponse<{ items: NotificationTask[] }>(
     fetch("/api/notifications/tasks", { credentials: "include" })
@@ -88,6 +101,7 @@ export async function fetchNotificationTasks(): Promise<NotificationTask[]> {
 
 export async function createNotificationTask(
   recipientUserids: string[],
+  recipientDepartmentIds: number[],
   schedule: NotificationSchedule
 ): Promise<{ task: NotificationTask; immediate: { success: boolean; error?: string } }> {
   return parseResponse(
@@ -95,7 +109,7 @@ export async function createNotificationTask(
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ recipientUserids, schedule })
+      body: JSON.stringify({ recipientUserids, recipientDepartmentIds, schedule })
     })
   );
 }

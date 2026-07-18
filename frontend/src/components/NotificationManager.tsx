@@ -23,14 +23,17 @@ import {
   deleteNotificationTask,
   fetchNotificationTasks,
   searchDingTalkContacts,
+  searchDingTalkDepartments,
   setNotificationTaskEnabled,
   type DingTalkContact,
+  type DingTalkDepartment,
   type NotificationSchedule,
   type NotificationTask
 } from "../receivables/api";
 
 interface FormValues {
   recipientUserids: string[];
+  recipientDepartmentIds: number[];
   kind: NotificationSchedule["kind"];
   interval: number;
   time: Dayjs;
@@ -57,6 +60,7 @@ export function NotificationManager() {
   const [modalOpen, setModalOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [contacts, setContacts] = useState<DingTalkContact[]>([]);
+  const [departments, setDepartments] = useState<DingTalkDepartment[]>([]);
   const [tasks, setTasks] = useState<NotificationTask[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [loadingTasks, setLoadingTasks] = useState(false);
@@ -82,17 +86,26 @@ export function NotificationManager() {
     }, 300);
   }
 
+  function searchDepartments(keyword: string) {
+    searchDingTalkDepartments(keyword)
+      .then(setDepartments)
+      .catch((cause: unknown) => message.error(cause instanceof Error ? cause.message : "部门搜索失败"));
+  }
+
   function openCreate() {
     form.setFieldsValue({
       recipientUserids: [],
+      recipientDepartmentIds: [],
       kind: "daily",
       interval: 1,
       time: dayjs().hour(9).minute(0),
       weekday: 0
     });
     setContacts([]);
+    setDepartments([]);
     setModalOpen(true);
     searchContacts("");
+    searchDepartments("");
   }
 
   async function submit() {
@@ -106,7 +119,11 @@ export function NotificationManager() {
     };
     setSubmitting(true);
     try {
-      const result = await createNotificationTask(values.recipientUserids, schedule);
+      const result = await createNotificationTask(
+        values.recipientUserids ?? [],
+        values.recipientDepartmentIds ?? [],
+        schedule
+      );
       setModalOpen(false);
       if (result.immediate.success) {
         message.success("已立即发送逾期摘要，并创建定时任务");
@@ -158,8 +175,8 @@ export function NotificationManager() {
         <Form form={form} layout="vertical">
           <Form.Item
             name="recipientUserids"
-            label="接收人"
-            rules={[{ required: true, message: "请选择接收人" }, { type: "array", max: 20, message: "最多选择 20 人" }]}
+            label="指定接收人"
+            rules={[{ type: "array", max: 20, message: "最多选择 20 人" }]}
           >
             <Select
               mode="multiple"
@@ -170,6 +187,19 @@ export function NotificationManager() {
               options={contacts.map((contact) => ({
                 value: contact.userid,
                 label: `${contact.name}${contact.department ? ` · ${contact.department}` : ""}`
+              }))}
+            />
+          </Form.Item>
+          <Form.Item name="recipientDepartmentIds" label="接收部门">
+            <Select
+              mode="multiple"
+              showSearch
+              filterOption={false}
+              onSearch={searchDepartments}
+              placeholder="输入部门名称搜索；定时发送时自动读取当前成员"
+              options={departments.map((department) => ({
+                value: department.departmentId,
+                label: department.name
               }))}
             />
           </Form.Item>

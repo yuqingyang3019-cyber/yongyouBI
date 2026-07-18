@@ -15,7 +15,7 @@ def _utc_now_iso() -> str:
 
 
 def default_contact_cache_db_path() -> Path:
-    configured = optional_env("PAYROLL_CONTACT_CACHE_DB")
+    configured = optional_env("DINGTALK_CONTACT_CACHE_DB") or optional_env("PAYROLL_CONTACT_CACHE_DB")
     if configured:
         return Path(configured)
     return PROJECT_ROOT / "data" / "payroll_contact_cache.sqlite"
