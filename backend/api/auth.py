@@ -28,7 +28,10 @@ def get_auth_config() -> dict[str, Any]:
 
 
 @router.get("/me")
-def get_me(user: dict[str, Any] = Depends(current_user)) -> dict[str, Any]:
+def get_me(response: Response, user: dict[str, Any] = Depends(current_user)) -> dict[str, Any]:
+    # Migrate sessions issued before COOKIE_DOMAIN was configured so the
+    # authenticated SQLBot subdomain can receive the same DingTalk session.
+    set_session_cookie(response, user)
     return {"user": user}
 
 
