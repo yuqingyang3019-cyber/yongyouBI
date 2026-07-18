@@ -68,7 +68,7 @@ services:
     mem_limit: 64m
 
   sqlbot:
-    image: dataease/sqlbot:v1.8.0@sha256:c4ca3acc34f0c63a64f3f3e7bb909760f17d184959635542278710144347d9e0
+    image: dataease/sqlbot:v1.9.0
     restart: unless-stopped
     privileged: true
     profiles: ["sqlbot"]

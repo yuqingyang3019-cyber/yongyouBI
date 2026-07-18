@@ -46,13 +46,12 @@ export default function App() {
           value={view}
         />
       </div>
-      {view === "receivables" ? (
+      <div hidden={view !== "receivables"}>
         <ReceivableWorkbenchV2 currentUser={user} />
-      ) : (
-        <main style={{ padding: 24 }}>
-          <SqlBotPanel />
-        </main>
-      )}
+      </div>
+      <main hidden={view !== "sqlbot"} style={{ padding: 24 }}>
+        <SqlBotPanel />
+      </main>
     </div>
   );
 }
