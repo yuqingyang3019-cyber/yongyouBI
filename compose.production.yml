@@ -29,6 +29,11 @@ services:
         condition: service_healthy
     volumes:
       - app_data:/data
+    networks:
+      default:
+      edge:
+        aliases:
+          - yongyou-api
     healthcheck:
       test:
         [
@@ -68,24 +73,11 @@ services:
     depends_on:
       api:
         condition: service_healthy
-    mem_limit: 64m
-
-  gateway:
-    image: caddy:2.10-alpine
-    restart: unless-stopped
-    depends_on:
-      - web
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./infra/production/Caddyfile:/etc/caddy/Caddyfile:ro
-      - ./infra/production/caddy-sites:/etc/caddy/sites:ro
-      - caddy_data:/data
-      - caddy_config:/config
     networks:
-      - default
-      - edge
+      default:
+      edge:
+        aliases:
+          - yongyou-web
     mem_limit: 64m
 
   sqlbot:
@@ -102,13 +94,16 @@ services:
       - sqlbot_images:/opt/sqlbot/images
       - sqlbot_logs:/opt/sqlbot/app/logs
       - sqlbot_postgres:/var/lib/postgresql/data
+    networks:
+      default:
+      edge:
+        aliases:
+          - yongyou-sqlbot
     mem_limit: 1500m
 
 volumes:
   postgres_data:
   app_data:
-  caddy_data:
-  caddy_config:
   sqlbot_excel:
   sqlbot_file:
   sqlbot_images:
@@ -117,4 +112,5 @@ volumes:
 
 networks:
   edge:
+    external: true
     name: water-healer-edge
