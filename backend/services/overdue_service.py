@@ -161,6 +161,20 @@ def build_receivable_rows(
         allocation = allocations.get(invoice_id) if allocations else None
         collected_amount = round(float(getattr(allocation, "collected_amount", 0.0) or 0.0), 2)
         match_quality = str(getattr(allocation, "match_quality", "unpaid") or "unpaid")
+        collection_evidence = [
+            {
+                "collectionId": item.collection_id,
+                "collectionCode": item.collection_code,
+                "amount": item.amount,
+                "rule": item.rule,
+                "matchedField": item.matched_field,
+                "orderNo": item.order_no,
+                "invoiceCode": item.invoice_code,
+                "contractCode": item.contract_code,
+                "billDate": item.bill_date,
+            }
+            for item in getattr(allocation, "evidence", ())
+        ]
         outstanding = round(max(tax_amount - collected_amount, 0.0), 2)
         collection_status = _collection_status(tax_amount, collected_amount)
 
@@ -175,6 +189,7 @@ def build_receivable_rows(
             "outstanding": outstanding,
             "collectionStatus": collection_status,
             "matchQuality": match_quality,
+            "collectionEvidence": collection_evidence,
             "auditTime": audit_dt.isoformat(sep=" ", timespec="seconds") if audit_dt else "",
             "paymentTermDays": payment_term_days,
             "dueDate": "",

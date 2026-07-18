@@ -28,6 +28,8 @@ class ReceivableMatchTest(unittest.TestCase):
         allocations = allocate_collections_to_invoices(invoices, collections)
         self.assertEqual(allocations["inv1"].collected_amount, 300)
         self.assertEqual(allocations["inv1"].match_quality, "partial_exact")
+        self.assertEqual(allocations["inv1"].evidence[0].collection_code, "REC-001")
+        self.assertEqual(allocations["inv1"].evidence[0].matched_field, "收款订单号 = 发票订单号")
 
     def test_contract_customer_fifo_fallback(self) -> None:
         invoices = [
@@ -61,6 +63,7 @@ class ReceivableMatchTest(unittest.TestCase):
         self.assertEqual(allocations["inv1"].collected_amount, 1000)
         self.assertEqual(allocations["inv2"].collected_amount, 200)
         self.assertEqual(allocations["inv1"].match_quality, "estimated")
+        self.assertEqual(allocations["inv1"].evidence[0].rule, "客户内按时间分配")
 
 
     def test_contract_no_match(self) -> None:

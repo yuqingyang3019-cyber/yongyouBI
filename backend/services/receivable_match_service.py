@@ -34,6 +34,20 @@ class InvoiceMatchTarget:
 class InvoiceAllocation:
     collected_amount: float
     match_quality: str
+    evidence: tuple["MatchEvidence", ...]
+
+
+@dataclass(frozen=True)
+class MatchEvidence:
+    collection_id: str
+    collection_code: str
+    amount: float
+    rule: str
+    matched_field: str
+    order_no: str
+    invoice_code: str
+    contract_code: str
+    bill_date: str
 
 
 def _money(value: Any) -> float:
@@ -144,8 +158,11 @@ def _apply_fifo(
     targets: list[InvoiceMatchTarget],
     allocations: dict[str, float],
     qualities: dict[str, str],
+    evidence: dict[str, list[MatchEvidence]],
     *,
     quality: str = "estimated",
+    rule: str,
+    matched_field: str,
 ) -> None:
     if not lines or not targets:
         return
@@ -163,6 +180,19 @@ def _apply_fifo(
             applied = min(amount_left, outstanding)
             allocations[target.invoice_id] = round(allocations[target.invoice_id] + applied, 2)
             qualities[target.invoice_id] = quality
+            evidence[target.invoice_id].append(
+                MatchEvidence(
+                    collection_id=line.collection_id,
+                    collection_code=line.collection_code,
+                    amount=applied,
+                    rule=rule,
+                    matched_field=matched_field,
+                    order_no=line.order_no,
+                    invoice_code=line.invoice_code,
+                    contract_code=line.contract_code,
+                    bill_date=line.bill_date,
+                )
+            )
             amount_left = round(amount_left - applied, 2)
 
 
@@ -176,6 +206,7 @@ def allocate_collections_to_invoices(
 
     allocations: dict[str, float] = {target.invoice_id: 0.0 for target in targets}
     qualities: dict[str, str] = {target.invoice_id: "unpaid" for target in targets}
+    evidence: dict[str, list[MatchEvidence]] = {target.invoice_id: [] for target in targets}
 
     order_to_invoice: dict[str, str] = {}
     code_to_invoice: dict[str, str] = {}
@@ -189,18 +220,35 @@ def allocate_collections_to_invoices(
     for payload in collections:
         for line in extract_collection_lines(payload):
             matched_invoice_id = ""
+            matched_field = ""
             if line.order_no and line.order_no in order_to_invoice:
                 matched_invoice_id = order_to_invoice[line.order_no]
                 qualities[matched_invoice_id] = "exact"
+                matched_field = "收款订单号 = 发票订单号"
             elif line.invoice_code and line.invoice_code in code_to_invoice:
                 matched_invoice_id = code_to_invoice[line.invoice_code]
                 qualities[matched_invoice_id] = "exact"
+                matched_field = "收款发票号 = 发票编号"
             elif line.order_no and line.order_no in code_to_invoice:
                 matched_invoice_id = code_to_invoice[line.order_no]
                 qualities[matched_invoice_id] = "exact"
+                matched_field = "收款订单号 = 发票编号"
 
             if matched_invoice_id:
                 allocations[matched_invoice_id] = round(allocations[matched_invoice_id] + line.amount, 2)
+                evidence[matched_invoice_id].append(
+                    MatchEvidence(
+                        collection_id=line.collection_id,
+                        collection_code=line.collection_code,
+                        amount=line.amount,
+                        rule="精确关联",
+                        matched_field=matched_field,
+                        order_no=line.order_no,
+                        invoice_code=line.invoice_code,
+                        contract_code=line.contract_code,
+                        bill_date=line.bill_date,
+                    )
+                )
             else:
                 unmatched_lines.append(line)
 
@@ -222,7 +270,16 @@ def allocate_collections_to_invoices(
             customer_lines.append(line)
 
     for line in contract_lines:
-        _apply_fifo([line], contract_buckets.get(line.contract_code, []), allocations, qualities, quality="contract")
+        _apply_fifo(
+            [line],
+            contract_buckets.get(line.contract_code, []),
+            allocations,
+            qualities,
+            evidence,
+            quality="contract",
+            rule="合同内按时间分配",
+            matched_field="收款合同号 = 发票合同号",
+        )
 
     for (contract_code, customer), bucket_targets in buckets.items():
         bucket_customer_lines = [
@@ -230,7 +287,15 @@ def allocate_collections_to_invoices(
             for line in customer_lines
             if line.amount > 0 and (not line.customer or line.customer == customer)
         ]
-        _apply_fifo(bucket_customer_lines, bucket_targets, allocations, qualities)
+        _apply_fifo(
+            bucket_customer_lines,
+            bucket_targets,
+            allocations,
+            qualities,
+            evidence,
+            rule="客户内按时间分配",
+            matched_field="收款客户 = 发票客户",
+        )
 
     result: dict[str, InvoiceAllocation] = {}
     for target in targets:
@@ -243,5 +308,6 @@ def allocate_collections_to_invoices(
         result[target.invoice_id] = InvoiceAllocation(
             collected_amount=collected,
             match_quality=quality,
+            evidence=tuple(evidence[target.invoice_id]),
         )
     return result

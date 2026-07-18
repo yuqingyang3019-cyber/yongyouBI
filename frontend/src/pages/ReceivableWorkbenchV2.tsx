@@ -96,10 +96,11 @@ function trueStatus(row: ContractOverdueRow): string {
 }
 
 function qualityTag(quality: MatchQuality) {
-  if (quality === "exact" || quality === "partial_exact") return <Tag color="success">高可信</Tag>;
+  if (quality === "exact") return <Tag color="success">精确关联</Tag>;
+  if (quality === "partial_exact") return <Tag color="success">精确关联，未收清</Tag>;
   if (quality === "contract") return <Tag color="processing">合同内分配</Tag>;
-  if (quality === "estimated") return <Tag color="warning">待核实</Tag>;
-  return <Tag>未确认</Tag>;
+  if (quality === "estimated") return <Tag color="warning">客户内分配，待核实</Tag>;
+  return <Tag>暂无可关联收款</Tag>;
 }
 
 function riskTag(kind: WorkItemKind) {
@@ -204,13 +205,13 @@ const invoiceColumns: ProColumns<ContractOverdueRow>[] = [
     render: (_, row) => <Text type={row.outstanding > 0 ? "danger" : undefined}>{money(row.outstanding)}</Text>
   },
   {
-    title: "匹配可信度",
+    title: "收款关联依据",
     dataIndex: "matchQuality",
     width: 130,
     valueType: "select",
     valueEnum: {
-      exact: { text: "高可信" },
-      partial_exact: { text: "高可信，未收清" },
+      exact: { text: "发票号或订单号精确关联" },
+      partial_exact: { text: "精确关联，尚未收清" },
       contract: { text: "合同内分配" },
       estimated: { text: "待核实" },
       unpaid: { text: "未确认" }
@@ -289,7 +290,15 @@ function Metric({
   );
 }
 
-function WorkItemDrawer({ item, onClose }: { item: WorkItem | null; onClose: () => void }) {
+function WorkItemDrawer({
+  item,
+  onClose,
+  onOpenInvoice
+}: {
+  item: WorkItem | null;
+  onClose: () => void;
+  onOpenInvoice: (row: ContractOverdueRow) => void;
+}) {
   return (
     <Drawer
       title={item ? `${item.customer} / ${item.contractCode}` : "应收详情"}
@@ -354,9 +363,74 @@ function WorkItemDrawer({ item, onClose }: { item: WorkItem | null; onClose: () 
                   </Space>
                 )
               },
-              { title: "匹配", dataIndex: "matchQuality", render: (value) => QUALITY_LABEL[value as MatchQuality] }
+              { title: "关联依据", dataIndex: "matchQuality", render: (value) => QUALITY_LABEL[value as MatchQuality] },
+              {
+                title: "",
+                key: "evidence",
+                render: (_, row) => <Button type="link" onClick={() => onOpenInvoice(row)}>查看证据</Button>
+              }
             ]}
           />
+        </>
+      ) : null}
+    </Drawer>
+  );
+}
+
+function InvoiceEvidenceDrawer({ row, onClose }: { row: ContractOverdueRow | null; onClose: () => void }) {
+  return (
+    <Drawer
+      title={row ? `发票 ${row.invoiceCode} 的计算依据` : "发票详情"}
+      width={720}
+      open={Boolean(row)}
+      onClose={onClose}
+    >
+      {row ? (
+        <>
+          <Space wrap>
+            {qualityTag(row.matchQuality)}
+            <Text type="secondary">{row.customer}</Text>
+          </Space>
+          <Divider orientation="left">应收与到期日依据</Divider>
+          <Descriptions bordered column={1} size="small">
+            <Descriptions.Item label="应收金额">{money(row.taxAmount)}</Descriptions.Item>
+            <Descriptions.Item label="发票审核时间">{row.auditTime || "未提供，无法计算到期日"}</Descriptions.Item>
+            <Descriptions.Item label="合同账期">{row.paymentTermDays ? `${row.paymentTermDays} 天` : "未提供"}</Descriptions.Item>
+            <Descriptions.Item label="测算到期日">{row.dueDate || "无法计算"}</Descriptions.Item>
+          </Descriptions>
+          <Divider orientation="left">已关联收款</Divider>
+          {row.collectionEvidence.length ? (
+            <Table
+              rowKey={(item) => `${item.collectionId}-${item.amount}-${item.matchedField}`}
+              size="small"
+              pagination={false}
+              scroll={{ x: 640 }}
+              dataSource={row.collectionEvidence}
+              columns={[
+                { title: "收款单", dataIndex: "collectionCode", width: 130 },
+                { title: "分配金额", dataIndex: "amount", align: "right", render: (value) => money(value) },
+                { title: "关联规则", dataIndex: "rule", width: 150 },
+                { title: "匹配字段", dataIndex: "matchedField", width: 210 },
+                { title: "收款日期", dataIndex: "billDate", width: 120 }
+              ]}
+            />
+          ) : (
+            <Alert
+              type="info"
+              showIcon
+              message="暂无可关联收款"
+              description="系统未找到带有该发票订单号、发票号、合同号或相同客户信息的有效收款记录。"
+            />
+          )}
+          {row.matchQuality === "estimated" ? (
+            <Alert
+              type="warning"
+              showIcon
+              message="客户内按时间分配"
+              description="收款缺少精确关联字段，系统仅按客户和发票审核时间分配；这不是用友核销关系。"
+              style={{ marginTop: 16 }}
+            />
+          ) : null}
         </>
       ) : null}
     </Drawer>
@@ -371,6 +445,7 @@ export function ReceivableWorkbenchV2({ currentUser }: { currentUser: AuthUser }
   const [productView, setProductView] = useState<ProductView>("workbench");
   const [workbenchTab, setWorkbenchTab] = useState<WorkbenchTab>("today");
   const [selectedItem, setSelectedItem] = useState<WorkItem | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<ContractOverdueRow | null>(null);
   const [selectedAging, setSelectedAging] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -448,7 +523,7 @@ export function ReceivableWorkbenchV2({ currentUser }: { currentUser: AuthUser }
             ? `最长逾期 ${row.longestOverdueDays} 天`
             : `${row.nearestDueDays} 天后到期`
     },
-    { title: "匹配可信度", dataIndex: "matchQuality", width: 130, render: (value: MatchQuality) => qualityTag(value) },
+    { title: "收款关联依据", dataIndex: "matchQuality", width: 160, render: (value: MatchQuality) => qualityTag(value) },
     { title: "责任信息", dataIndex: "owner", width: 110 },
     {
       title: "",
@@ -487,6 +562,10 @@ export function ReceivableWorkbenchV2({ currentUser }: { currentUser: AuthUser }
       pagination={{ pageSize: 20, showSizeChanger: true }}
       columnsState={{ persistenceKey: "receivable-invoice-columns-v2", persistenceType: "localStorage" }}
       options={{ density: true, setting: true, reload: false }}
+      onRow={(row) => ({
+        onClick: () => setSelectedInvoice(row),
+        style: { cursor: "pointer" }
+      })}
       toolBarRender={() => [
         <Button key="export" disabled={!exportRows.length} onClick={() => exportCsv(exportRows)}>
           导出筛选结果（{exportRows.length} 条）
@@ -632,11 +711,11 @@ export function ReceivableWorkbenchV2({ currentUser }: { currentUser: AuthUser }
         </ProCard>
       </Col>
       <Col xs={24} lg={10}>
-        <ProCard title="匹配质量">
+        <ProCard title="收款关联依据">
           <Text>发票号或订单号精确关联</Text>
           <Progress percent={matchCoverage} />
           <Space direction="vertical">
-            <Text type="secondary">高可信 {highConfidenceCount} 笔</Text>
+            <Text type="secondary">精确关联 {highConfidenceCount} 笔</Text>
             <Text type="secondary">客户维度估算 {reviewRows.length} 笔</Text>
             <Text type="secondary">尚未发现可关联收款 {allKnownRows.filter((row) => row.matchQuality === "unpaid").length} 笔</Text>
           </Space>
@@ -696,7 +775,12 @@ export function ReceivableWorkbenchV2({ currentUser }: { currentUser: AuthUser }
             {productView === "workbench" ? workbench : productView === "management" ? management : health}
           </>
         )}
-        <WorkItemDrawer item={selectedItem} onClose={() => setSelectedItem(null)} />
+        <WorkItemDrawer
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+          onOpenInvoice={setSelectedInvoice}
+        />
+        <InvoiceEvidenceDrawer row={selectedInvoice} onClose={() => setSelectedInvoice(null)} />
       </PageContainer>
     </ConfigProvider>
   );

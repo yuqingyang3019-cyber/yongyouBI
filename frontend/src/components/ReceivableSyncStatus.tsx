@@ -16,12 +16,12 @@ function buildSyncSummary(data: ContractOverdueResult | null): string {
   }
   const invoicePart =
     syncStatus.status === "running"
-      ? `发票同步中 ${syncStatus.doneCount}/${syncStatus.totalListed}`
-      : `发票 ${syncStatus.cachedCount} 张`;
+      ? `正在同步发票数据`
+      : `已同步 ${syncStatus.cachedCount} 张发票`;
   const collectionPart = collectionSync
     ? collectionSync.status === "running"
-      ? `收款同步中 ${collectionSync.doneCount}/${collectionSync.totalListed}`
-      : `收款 ${collectionSync.cachedCount} 笔`
+      ? `正在同步收款数据`
+      : `已同步 ${collectionSync.cachedCount} 笔收款`
     : "收款准备中";
   if (syncStatus.status === "error") {
     return `发票同步失败：${syncStatus.error || "未知错误"}`;
@@ -33,7 +33,7 @@ function buildSyncSummary(data: ContractOverdueResult | null): string {
     return "本地暂无缓存，正在等待首次同步结果";
   }
   if (syncStatus.lastSyncedAt) {
-    return `${invoicePart} · ${collectionPart} · 上次同步 ${syncStatus.lastSyncedAt}`;
+    return `${invoicePart} · ${collectionPart} · 更新于 ${syncStatus.lastSyncedAt}`;
   }
   return `${invoicePart} · ${collectionPart}`;
 }

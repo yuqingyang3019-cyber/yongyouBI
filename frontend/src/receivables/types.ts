@@ -10,6 +10,18 @@ export type OverdueStatus =
 export type CollectionStatus = "settled" | "partial" | "unpaid";
 export type MatchQuality = "exact" | "partial_exact" | "contract" | "estimated" | "unpaid";
 
+export interface CollectionMatchEvidence {
+  collectionId: string;
+  collectionCode: string;
+  amount: number;
+  rule: string;
+  matchedField: string;
+  orderNo: string;
+  invoiceCode: string;
+  contractCode: string;
+  billDate: string;
+}
+
 export interface ContractOverdueRow {
   invoiceId: string;
   invoiceCode: string;
@@ -21,6 +33,7 @@ export interface ContractOverdueRow {
   outstanding: number;
   collectionStatus: CollectionStatus;
   matchQuality: MatchQuality;
+  collectionEvidence: CollectionMatchEvidence[];
   auditTime: string;
   paymentTermDays: number;
   dueDate: string;
