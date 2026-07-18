@@ -80,8 +80,12 @@ services:
       - "443:443"
     volumes:
       - ./infra/production/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./infra/production/caddy-sites:/etc/caddy/sites:ro
       - caddy_data:/data
       - caddy_config:/config
+    networks:
+      - default
+      - edge
     mem_limit: 64m
 
   sqlbot:
@@ -110,3 +114,7 @@ volumes:
   sqlbot_images:
   sqlbot_logs:
   sqlbot_postgres:
+
+networks:
+  edge:
+    name: water-healer-edge

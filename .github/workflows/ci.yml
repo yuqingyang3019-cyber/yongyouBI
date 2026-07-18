@@ -25,6 +25,7 @@ jobs:
           candidates=(
             tests.test_auth_session
             tests.test_collection_sync_service
+            tests.test_dingtalk_bot_answers
             tests.test_notification_tasks
             tests.test_overdue_service
             tests.test_postgres_receivable_store

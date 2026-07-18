@@ -9,3 +9,5 @@ admin.water-healer.com {
     }
     reverse_proxy sqlbot:8000
 }
+
+import /etc/caddy/sites/*.caddy

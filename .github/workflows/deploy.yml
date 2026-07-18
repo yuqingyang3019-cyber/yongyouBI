@@ -49,4 +49,5 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
           printf '%s' "$GHCR_PULL_TOKEN" | ssh "$DEPLOY_USER@$DEPLOY_HOST" "docker login $REGISTRY -u '${{ github.actor }}' --password-stdin"
-          ssh "$DEPLOY_USER@$DEPLOY_HOST" "cd $DEPLOY_PATH && API_IMAGE=$API_IMAGE:${{ github.sha }} WEB_IMAGE=$WEB_IMAGE:${{ github.sha }} docker compose -f compose.production.yml pull api web && API_IMAGE=$API_IMAGE:${{ github.sha }} WEB_IMAGE=$WEB_IMAGE:${{ github.sha }} docker compose -f compose.production.yml up -d --no-build postgres api web && curl --fail --retry 10 --retry-connrefused http://127.0.0.1/health"
+          tar -czf - compose.production.yml infra/production | ssh "$DEPLOY_USER@$DEPLOY_HOST" "tar -xzf - -C $DEPLOY_PATH"
+          ssh "$DEPLOY_USER@$DEPLOY_HOST" "cd $DEPLOY_PATH && API_IMAGE=$API_IMAGE:${{ github.sha }} WEB_IMAGE=$WEB_IMAGE:${{ github.sha }} docker compose -f compose.production.yml pull api web && API_IMAGE=$API_IMAGE:${{ github.sha }} WEB_IMAGE=$WEB_IMAGE:${{ github.sha }} docker compose -f compose.production.yml up -d --no-build postgres api web bot gateway && curl --fail --retry 10 --retry-connrefused http://127.0.0.1/health"
