@@ -20,6 +20,8 @@ services:
     build:
       context: .
       target: backend
+      args:
+        PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.org/simple}
     restart: unless-stopped
     env_file: .env
     depends_on:
